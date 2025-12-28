@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.interviewkb.mapper.CategoryMapper">
+
+    <resultMap id="CategoryWithChildrenMap" type="com.interviewkb.entity.Category">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="level" column="level"/>
+        <result property="sort" column="sort"/>
+        <result property="icon" column="icon"/>
+        <result property="description" column="description"/>
+        <result property="questionCount" column="question_count"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <select id="selectAllWithChildren" resultMap="CategoryWithChildrenMap">
+        SELECT * FROM category WHERE deleted = 0 ORDER BY level, sort, id
+    </select>
+
+    <select id="selectByParentId" resultType="com.interviewkb.entity.Category">
+        SELECT * FROM category WHERE parent_id = #{parentId} AND deleted = 0 ORDER BY sort, id
+    </select>
+
+    <update id="updateQuestionCount">
+        UPDATE category SET question_count = #{count} WHERE id = #{id}
+    </update>
+</mapper>

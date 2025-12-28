@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.interviewkb.mapper.QuestionMapper">
+
+    <resultMap id="QuestionWithTagsMap" type="com.interviewkb.entity.Question">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="content" column="content"/>
+        <result property="answer" column="answer"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="difficulty" column="difficulty"/>
+        <result property="source" column="source"/>
+        <result property="sourceUrl" column="source_url"/>
+        <result property="viewCount" column="view_count"/>
+        <result property="likeCount" column="like_count"/>
+        <result property="collectCount" column="collect_count"/>
+        <result property="commentCount" column="comment_count"/>
+        <result property="status" column="status"/>
+        <result property="isTop" column="is_top"/>
+        <result property="isRecommend" column="is_recommend"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="categoryName" column="category_name"/>
+        <result property="creatorName" column="creator_name"/>
+        <collection property="tags" ofType="com.interviewkb.entity.Tag">
+            <id property="id" column="tag_id"/>
+            <result property="name" column="tag_name"/>
+            <result property="color" column="tag_color"/>
+        </collection>
+    </resultMap>
+
+    <select id="selectByIdWithTags" resultMap="QuestionWithTagsMap">
+        SELECT q.*, c.name as category_name, u.nickname as creator_name,
+               t.id as tag_id, t.name as tag_name, t.color as tag_color
+        FROM question q
+        LEFT JOIN category c ON q.category_id = c.id
+        LEFT JOIN sys_user u ON q.created_by = u.id
+        LEFT JOIN question_tag qt ON q.id = qt.question_id
+        LEFT JOIN tag t ON qt.tag_id = t.id
+        WHERE q.id = #{id} AND q.deleted = 0
+    </select>
+
+    <select id="selectPageWithTags" resultMap="QuestionWithTagsMap">
+        SELECT q.*, c.name as category_name, u.nickname as creator_name,
+               t.id as tag_id, t.name as tag_name, t.color as tag_color
+        FROM question q
+        LEFT JOIN category c ON q.category_id = c.id
+        LEFT JOIN sys_user u ON q.created_by = u.id
+        LEFT JOIN question_tag qt ON q.id = qt.question_id
+        LEFT JOIN tag t ON qt.tag_id = t.id
+        WHERE q.deleted = 0
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (q.title LIKE CONCAT('%', #{query.keyword}, '%')
+                 OR q.content LIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+        <if test="query.categoryId != null">
+            AND q.category_id = #{query.categoryId}
+        </if>
+        <if test="query.difficulty != null">
+            AND q.difficulty = #{query.difficulty}
+        </if>
+        <if test="query.source != null and query.source != ''">
+            AND q.source LIKE CONCAT('%', #{query.source}, '%')
+        </if>
+        <if test="query.status != null">
+            AND q.status = #{query.status}
+        </if>
+        <if test="query.tagIds != null and query.tagIds.size() > 0">
+            AND q.id IN (
+                SELECT question_id FROM question_tag WHERE tag_id IN
+                <foreach collection="query.tagIds" item="tagId" open="(" separator="," close=")">
+                    #{tagId}
+                </foreach>
+            )
+        </if>
+        ORDER BY q.is_top DESC,
+        <choose>
+            <when test="query.sortField == 'viewCount'">q.view_count</when>
+            <when test="query.sortField == 'likeCount'">q.like_count</when>
+            <otherwise>q.created_at</otherwise>
+        </choose>
+        <choose>
+            <when test="query.sortOrder == 'asc'">ASC</when>
+            <otherwise>DESC</otherwise>
+        </choose>
+    </select>
+
+    <select id="selectByTagId" resultType="com.interviewkb.entity.Question">
+        SELECT q.* FROM question q
+        INNER JOIN question_tag qt ON q.id = qt.question_id
+        WHERE qt.tag_id = #{tagId} AND q.deleted = 0
+        ORDER BY q.created_at DESC
+    </select>
+
+    <select id="fullTextSearch" resultType="com.interviewkb.entity.Question">
+        SELECT * FROM question
+        WHERE deleted = 0 AND status = 1
+        AND MATCH(title, content) AGAINST(#{keyword} IN NATURAL LANGUAGE MODE)
+        ORDER BY MATCH(title, content) AGAINST(#{keyword} IN NATURAL LANGUAGE MODE) DESC
+        LIMIT 50
+    </select>
+
+    <update id="incrementViewCount">
+        UPDATE question SET view_count = view_count + 1 WHERE id = #{id}
+    </update>
+
+    <update id="updateLikeCount">
+        UPDATE question SET like_count = like_count + #{count} WHERE id = #{id}
+    </update>
+
+    <update id="updateCollectCount">
+        UPDATE question SET collect_count = collect_count + #{count} WHERE id = #{id}
+    </update>
+
+    <update id="updateCommentCount">
+        UPDATE question SET comment_count = comment_count + #{count} WHERE id = #{id}
+    </update>
+</mapper>
