@@ -20,11 +20,14 @@ export interface PageResult<T> {
 // 用户类型
 export interface User {
   id: number
-  username: string
-  email: string
+  username?: string
+  email?: string
   nickname: string
   avatar: string
   phone?: string
+  phoneVerified?: number
+  wechatOpenid?: string
+  wechatNickname?: string
   gender?: number
   bio?: string
   roles?: string[]
@@ -35,6 +38,44 @@ export interface LoginRequest {
   username: string
   password: string
   rememberMe?: boolean
+}
+
+// 手机验证码登录请求
+export interface PhoneLoginRequest {
+  phone: string
+  code: string
+}
+
+// 发送短信验证码请求
+export interface SmsCodeRequest {
+  phone: string
+  purpose?: 'login' | 'bind'
+}
+
+// 微信登录请求
+export interface WechatLoginRequest {
+  code: string
+  scene?: string
+}
+
+// 微信二维码响应
+export interface WechatQrcodeResponse {
+  ticket?: string
+  qrcodeUrl: string
+  sceneStr: string
+  expireSeconds: number
+}
+
+// 绑定手机号请求
+export interface BindPhoneRequest {
+  phone: string
+  code: string
+}
+
+// 绑定邮箱请求
+export interface BindEmailRequest {
+  email: string
+  code: string
 }
 
 // 注册请求

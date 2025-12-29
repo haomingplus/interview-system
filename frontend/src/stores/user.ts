@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { User, LoginRequest, RegisterRequest } from '@/types'
+import type { User, LoginRequest, RegisterRequest, PhoneLoginRequest, WechatLoginRequest, LoginResponse } from '@/types'
 import { authApi } from '@/api/auth'
 import router from '@/router'
 import { DEFAULT_AVATAR } from '@/constants'
@@ -16,12 +16,43 @@ export const useUserStore = defineStore(
     const isAdmin = computed(() => userInfo.value?.roles?.includes('ROLE_ADMIN') ?? false)
     const avatar = computed(() => userInfo.value?.avatar || DEFAULT_AVATAR)
 
+    function handleLoginResponse(data: LoginResponse) {
+      token.value = data.accessToken
+      refreshToken.value = data.refreshToken
+      userInfo.value = data.userInfo
+    }
+
     async function login(data: LoginRequest) {
       const res = await authApi.login(data)
       if (res.code === 200) {
-        token.value = res.data.accessToken
-        refreshToken.value = res.data.refreshToken
-        userInfo.value = res.data.userInfo
+        handleLoginResponse(res.data)
+        return true
+      }
+      return false
+    }
+
+    async function loginByPhone(data: PhoneLoginRequest) {
+      const res = await authApi.loginByPhone(data)
+      if (res.code === 200) {
+        handleLoginResponse(res.data)
+        return true
+      }
+      return false
+    }
+
+    async function loginByWechat(data: WechatLoginRequest) {
+      const res = await authApi.loginByWechat(data)
+      if (res.code === 200) {
+        handleLoginResponse(res.data)
+        return true
+      }
+      return false
+    }
+
+    async function checkWechatLoginStatus(sceneStr: string) {
+      const res = await authApi.checkWechatLoginStatus(sceneStr)
+      if (res.code === 200 && res.data) {
+        handleLoginResponse(res.data)
         return true
       }
       return false
@@ -73,6 +104,9 @@ export const useUserStore = defineStore(
       isAdmin,
       avatar,
       login,
+      loginByPhone,
+      loginByWechat,
+      checkWechatLoginStatus,
       register,
       refreshAccessToken,
       logout,

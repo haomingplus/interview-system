@@ -93,12 +93,6 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '登录' },
   },
   {
-    path: '/register',
-    name: 'Register',
-    component: () => import('@/views/auth/register.vue'),
-    meta: { title: '注册' },
-  },
-  {
     path: '/share/:code',
     name: 'Share',
     component: () => import('@/views/question/share.vue'),
@@ -140,8 +134,8 @@ router.beforeEach((to, from, next) => {
     return
   }
 
-  // 已登录用户访问登录/注册页
-  if ((to.name === 'Login' || to.name === 'Register') && userStore.isLoggedIn) {
+  // 已登录用户访问登录页
+  if (to.name === 'Login' && userStore.isLoggedIn) {
     next('/')
     return
   }

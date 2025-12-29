@@ -14,12 +14,17 @@ USE interview_kb;
 -- 用户表
 CREATE TABLE `sys_user` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '用户ID',
-    `username` VARCHAR(50) NOT NULL COMMENT '用户名',
-    `email` VARCHAR(100) NOT NULL COMMENT '邮箱',
-    `password` VARCHAR(255) NOT NULL COMMENT '密码(加密)',
+    `username` VARCHAR(50) DEFAULT NULL COMMENT '用户名',
+    `email` VARCHAR(100) DEFAULT NULL COMMENT '邮箱',
+    `password` VARCHAR(255) DEFAULT NULL COMMENT '密码(加密)',
     `nickname` VARCHAR(50) DEFAULT NULL COMMENT '昵称',
     `avatar` VARCHAR(500) DEFAULT NULL COMMENT '头像URL',
     `phone` VARCHAR(20) DEFAULT NULL COMMENT '手机号',
+    `phone_verified` TINYINT DEFAULT 0 COMMENT '手机号是否验证: 0-否 1-是',
+    `wechat_openid` VARCHAR(100) DEFAULT NULL COMMENT '微信OpenID',
+    `wechat_unionid` VARCHAR(100) DEFAULT NULL COMMENT '微信UnionID',
+    `wechat_nickname` VARCHAR(100) DEFAULT NULL COMMENT '微信昵称',
+    `wechat_avatar` VARCHAR(500) DEFAULT NULL COMMENT '微信头像',
     `gender` TINYINT DEFAULT 0 COMMENT '性别: 0-未知 1-男 2-女',
     `bio` VARCHAR(500) DEFAULT NULL COMMENT '个人简介',
     `status` TINYINT DEFAULT 1 COMMENT '状态: 0-禁用 1-正常',
@@ -33,6 +38,8 @@ CREATE TABLE `sys_user` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_username` (`username`),
     UNIQUE KEY `uk_email` (`email`),
+    UNIQUE KEY `uk_phone` (`phone`),
+    UNIQUE KEY `uk_wechat_openid` (`wechat_openid`),
     KEY `idx_status` (`status`),
     KEY `idx_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
