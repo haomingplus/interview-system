@@ -1,5 +1,5 @@
 <template>
-  <el-container class="main-layout">
+  <el-container class="main-layout" :class="{ 'is-dark': themeStore.isDark }">
     <!-- 顶部导航 -->
     <el-header class="header">
       <div class="header-content">
@@ -38,6 +38,24 @@
           </template>
         </el-input>
 
+        <!-- 工具栏 -->
+        <div class="header-tools">
+          <!-- 添加题目按钮 -->
+          <el-tooltip content="添加题目" placement="bottom">
+            <el-button
+              v-if="userStore.isLoggedIn"
+              :icon="Plus"
+              circle
+              @click="showAddQuestionDialog = true"
+            />
+          </el-tooltip>
+
+          <!-- 主题切换 -->
+          <el-tooltip :content="themeTooltip" placement="bottom">
+            <el-button :icon="themeIcon" circle @click="themeStore.toggleTheme" />
+          </el-tooltip>
+        </div>
+
         <!-- 用户操作 -->
         <div class="header-actions">
           <template v-if="userStore.isLoggedIn">
@@ -47,6 +65,7 @@
                   {{ userStore.userInfo?.nickname?.charAt(0) }}
                 </el-avatar>
                 <span v-if="!isMobile" class="username">{{ userStore.userInfo?.nickname }}</span>
+                <el-icon v-if="!isMobile"><ArrowDown /></el-icon>
               </div>
               <template #dropdown>
                 <el-dropdown-menu>
@@ -59,7 +78,10 @@
                   <el-dropdown-item command="statistics">
                     <el-icon><DataAnalysis /></el-icon>学习统计
                   </el-dropdown-item>
-                  <el-dropdown-item divided command="logout">
+                  <el-dropdown-item v-if="userStore.isAdmin" divided command="admin">
+                    <el-icon><Setting /></el-icon>管理后台
+                  </el-dropdown-item>
+                  <el-dropdown-item :divided="!userStore.isAdmin" command="logout">
                     <el-icon><SwitchButton /></el-icon>退出登录
                   </el-dropdown-item>
                 </el-dropdown-menu>
@@ -104,14 +126,23 @@
         <span>{{ item.label }}</span>
       </div>
     </div>
+
+    <!-- 添加题目对话框 -->
+    <QuestionFormDialog
+      v-model:visible="showAddQuestionDialog"
+      @success="handleQuestionAdded"
+    />
   </el-container>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, markRaw } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { useCategoryStore } from '@/stores/category'
+import { useThemeStore } from '@/stores/theme'
+import QuestionFormDialog from '@/components/question/QuestionFormDialog.vue'
 import {
   Reading,
   Search,
@@ -124,24 +155,44 @@ import {
   Grid,
   TrendCharts,
   UserFilled,
+  Plus,
+  Sunny,
+  Moon,
+  Monitor,
+  ArrowDown,
+  Setting,
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 const categoryStore = useCategoryStore()
+const themeStore = useThemeStore()
 
 const searchKeyword = ref('')
 const isMobile = ref(false)
+const showAddQuestionDialog = ref(false)
 
 const activeMenu = computed(() => route.path)
 
+const themeIcon = computed(() => {
+  if (themeStore.mode === 'light') return markRaw(Sunny)
+  if (themeStore.mode === 'dark') return markRaw(Moon)
+  return markRaw(Monitor)
+})
+
+const themeTooltip = computed(() => {
+  if (themeStore.mode === 'light') return '浅色模式 (点击切换)'
+  if (themeStore.mode === 'dark') return '深色模式 (点击切换)'
+  return '跟随系统 (点击切换)'
+})
+
 const mobileNavItems = [
-  { path: '/', label: '首页', icon: House },
-  { path: '/questions', label: '题库', icon: Collection },
-  { path: '/categories', label: '分类', icon: Grid },
-  { path: '/learning', label: '学习', icon: TrendCharts },
-  { path: '/user', label: '我的', icon: UserFilled },
+  { path: '/', label: '首页', icon: markRaw(House) },
+  { path: '/questions', label: '题库', icon: markRaw(Collection) },
+  { path: '/categories', label: '分类', icon: markRaw(Grid) },
+  { path: '/learning', label: '学习', icon: markRaw(TrendCharts) },
+  { path: '/user', label: '我的', icon: markRaw(UserFilled) },
 ]
 
 function checkMobile() {
@@ -176,16 +227,25 @@ function handleUserCommand(command: string) {
     case 'statistics':
       router.push('/learning/statistics')
       break
+    case 'admin':
+      router.push('/admin')
+      break
     case 'logout':
       userStore.logout()
+      ElMessage.success('已退出登录')
       break
   }
+}
+
+function handleQuestionAdded() {
+  ElMessage.success('题目添加成功')
 }
 
 onMounted(() => {
   checkMobile()
   window.addEventListener('resize', checkMobile)
   categoryStore.loadCategoryTree()
+  themeStore.init()
 })
 
 onUnmounted(() => {
@@ -198,16 +258,19 @@ onUnmounted(() => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: var(--bg-color);
+  transition: background-color 0.3s;
 }
 
 .header {
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: var(--header-bg);
+  box-shadow: var(--shadow-light);
   padding: 0;
   height: 60px;
   position: sticky;
   top: 0;
   z-index: 100;
+  transition: background-color 0.3s;
 
   .header-content {
     max-width: 1400px;
@@ -216,7 +279,7 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     padding: 0 20px;
-    gap: 20px;
+    gap: 16px;
   }
 }
 
@@ -237,15 +300,23 @@ onUnmounted(() => {
 .nav-menu {
   flex: 1;
   border-bottom: none;
+  background: transparent;
 
   :deep(.el-menu-item) {
     height: 60px;
     line-height: 60px;
+    background: transparent;
   }
 }
 
 .search-input {
-  width: 240px;
+  width: 220px;
+}
+
+.header-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .header-actions {
@@ -259,17 +330,25 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background: var(--hover-bg);
+  }
 
   .username {
     font-size: 14px;
-    color: #333;
+    color: var(--text-color);
   }
 }
 
 .main-content {
   flex: 1;
-  background: #f5f7fa;
+  background: var(--bg-color);
   padding: 20px;
+  transition: background-color 0.3s;
 
   @media (max-width: 768px) {
     padding: 10px;
@@ -278,11 +357,12 @@ onUnmounted(() => {
 }
 
 .footer {
-  background: #fff;
+  background: var(--header-bg);
   text-align: center;
   padding: 20px;
-  color: #666;
+  color: var(--text-secondary);
   font-size: 14px;
+  transition: background-color 0.3s;
 
   .footer-content p {
     margin: 5px 0;
@@ -294,22 +374,24 @@ onUnmounted(() => {
   bottom: 0;
   left: 0;
   right: 0;
-  background: #fff;
+  background: var(--header-bg);
   display: flex;
   justify-content: space-around;
   padding: 8px 0;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
   z-index: 100;
+  transition: background-color 0.3s;
 
   .nav-item {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 2px;
-    color: #666;
+    color: var(--text-secondary);
     font-size: 12px;
     cursor: pointer;
     padding: 4px 12px;
+    transition: color 0.2s;
 
     &.active {
       color: var(--el-color-primary);

@@ -20,7 +20,7 @@ const router = useRouter()
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f7fa;
+  background: var(--bg-color);
 
   .content {
     text-align: center;
@@ -28,13 +28,13 @@ const router = useRouter()
     h1 {
       font-size: 120px;
       font-weight: 700;
-      color: #ddd;
+      color: var(--text-muted);
       margin-bottom: 20px;
     }
 
     p {
       font-size: 18px;
-      color: #666;
+      color: var(--text-secondary);
       margin-bottom: 30px;
     }
   }

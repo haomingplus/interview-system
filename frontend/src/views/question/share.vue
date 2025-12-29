@@ -55,13 +55,13 @@ onMounted(() => {
     .question-title {
       font-size: 24px;
       font-weight: 600;
-      color: #333;
+      color: var(--text-color);
       text-align: center;
     }
 
     .question-body {
       line-height: 1.8;
-      color: #333;
+      color: var(--text-color);
     }
 
     .share-footer {
@@ -69,7 +69,7 @@ onMounted(() => {
 
       p {
         margin-bottom: 16px;
-        color: #666;
+        color: var(--text-secondary);
       }
     }
   }

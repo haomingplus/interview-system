@@ -22,10 +22,12 @@ const router = useRouter()
 .plan-detail-page {
   max-width: 900px;
   margin: 0 auto;
+  padding: 20px;
 
   .page-title {
     font-size: 18px;
     font-weight: 600;
+    color: var(--text-color);
   }
 }
 </style>
