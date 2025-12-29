@@ -41,12 +41,12 @@
         <!-- 工具栏 -->
         <div class="header-tools">
           <!-- 添加题目按钮 -->
-          <el-tooltip content="添加题目" placement="bottom">
+          <el-tooltip content="发布题目" placement="bottom">
             <el-button
               v-if="userStore.isLoggedIn"
-              :icon="Plus"
+              :icon="Edit"
               circle
-              @click="showAddQuestionDialog = true"
+              @click="router.push('/question/editor')"
             />
           </el-tooltip>
 
@@ -61,7 +61,7 @@
           <template v-if="userStore.isLoggedIn">
             <el-dropdown @command="handleUserCommand">
               <div class="user-info">
-                <el-avatar :size="32" :src="userStore.userInfo?.avatar">
+                <el-avatar :size="32" :src="userStore.avatar">
                   {{ userStore.userInfo?.nickname?.charAt(0) }}
                 </el-avatar>
                 <span v-if="!isMobile" class="username">{{ userStore.userInfo?.nickname }}</span>
@@ -127,12 +127,7 @@
       </div>
     </div>
 
-    <!-- 添加题目对话框 -->
-    <QuestionFormDialog
-      v-model:visible="showAddQuestionDialog"
-      @success="handleQuestionAdded"
-    />
-  </el-container>
+    </el-container>
 </template>
 
 <script setup lang="ts">
@@ -142,7 +137,6 @@ import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { useCategoryStore } from '@/stores/category'
 import { useThemeStore } from '@/stores/theme'
-import QuestionFormDialog from '@/components/question/QuestionFormDialog.vue'
 import {
   Reading,
   Search,
@@ -155,7 +149,7 @@ import {
   Grid,
   TrendCharts,
   UserFilled,
-  Plus,
+  Edit,
   Sunny,
   Moon,
   Monitor,
@@ -171,7 +165,6 @@ const themeStore = useThemeStore()
 
 const searchKeyword = ref('')
 const isMobile = ref(false)
-const showAddQuestionDialog = ref(false)
 
 const activeMenu = computed(() => route.path)
 
@@ -235,10 +228,6 @@ function handleUserCommand(command: string) {
       ElMessage.success('已退出登录')
       break
   }
-}
-
-function handleQuestionAdded() {
-  ElMessage.success('题目添加成功')
 }
 
 onMounted(() => {

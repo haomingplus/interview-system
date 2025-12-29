@@ -25,6 +25,18 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '题目详情' },
       },
       {
+        path: 'question/editor',
+        name: 'QuestionEditor',
+        component: () => import('@/views/question/editor.vue'),
+        meta: { title: '发布题目', requiresAuth: true },
+      },
+      {
+        path: 'question/editor/:id',
+        name: 'QuestionEditorEdit',
+        component: () => import('@/views/question/editor.vue'),
+        meta: { title: '编辑题目', requiresAuth: true },
+      },
+      {
         path: 'categories',
         name: 'CategoryList',
         component: () => import('@/views/category/index.vue'),

@@ -6,7 +6,7 @@
         <!-- 用户信息卡片 -->
         <el-card class="user-card">
           <div class="user-header">
-            <el-avatar :size="90" :src="userStore.userInfo?.avatar">
+            <el-avatar :size="90" :src="userStore.avatar">
               {{ userStore.userInfo?.nickname?.charAt(0) }}
             </el-avatar>
             <div class="user-info">

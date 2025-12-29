@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { User, LoginRequest, RegisterRequest } from '@/types'
 import { authApi } from '@/api/auth'
 import router from '@/router'
+import { DEFAULT_AVATAR } from '@/constants'
 
 export const useUserStore = defineStore(
   'user',
@@ -13,6 +14,7 @@ export const useUserStore = defineStore(
 
     const isLoggedIn = computed(() => !!token.value && !!userInfo.value)
     const isAdmin = computed(() => userInfo.value?.roles?.includes('ROLE_ADMIN') ?? false)
+    const avatar = computed(() => userInfo.value?.avatar || DEFAULT_AVATAR)
 
     async function login(data: LoginRequest) {
       const res = await authApi.login(data)
@@ -69,6 +71,7 @@ export const useUserStore = defineStore(
       userInfo,
       isLoggedIn,
       isAdmin,
+      avatar,
       login,
       register,
       refreshAccessToken,
