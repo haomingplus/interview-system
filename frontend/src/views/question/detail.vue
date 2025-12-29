@@ -1,150 +1,162 @@
 <template>
-  <div v-loading="loading" class="question-detail-page">
-    <template v-if="question">
-      <!-- 题目信息 -->
-      <el-card class="question-card">
-        <template #header>
-          <div class="question-header">
-            <div class="question-tags">
-              <el-tag :type="DifficultyMap[question.difficulty].type">
-                {{ DifficultyMap[question.difficulty].label }}
-              </el-tag>
-              <el-tag v-if="question.source" type="info">{{ question.source }}</el-tag>
-              <el-tag
-                v-for="tag in question.tags"
-                :key="tag.id"
-                :color="tag.color"
-                effect="plain"
-              >
-                {{ tag.name }}
-              </el-tag>
+  <div class="question-detail-page">
+    <div v-loading="loading" class="page-content">
+      <!-- 左侧主内容 -->
+      <main class="main-content">
+        <template v-if="question">
+          <!-- 题目信息 -->
+          <el-card class="question-card">
+            <template #header>
+              <div class="question-header">
+                <div class="question-tags">
+                  <el-tag :type="DifficultyMap[question.difficulty]?.type">
+                    {{ DifficultyMap[question.difficulty]?.label }}
+                  </el-tag>
+                  <el-tag v-if="question.source" type="info">{{ question.source }}</el-tag>
+                  <el-tag
+                    v-for="tag in question.tags"
+                    :key="tag.id"
+                    :color="tag.color"
+                    effect="plain"
+                  >
+                    {{ tag.name }}
+                  </el-tag>
+                </div>
+                <div class="question-actions">
+                  <el-button :icon="isLiked ? StarFilled : Star" :type="isLiked ? 'warning' : 'default'" @click="handleLike">
+                    {{ question.likeCount }}
+                  </el-button>
+                  <el-button :icon="isCollected ? FolderChecked : FolderAdd" @click="handleCollect">
+                    收藏
+                  </el-button>
+                  <el-button :icon="Share" @click="handleShare">
+                    分享
+                  </el-button>
+                </div>
+              </div>
+            </template>
+
+            <h1 class="question-title">{{ question.title }}</h1>
+
+            <div class="question-meta">
+              <span>
+                <el-icon><Folder /></el-icon>
+                <el-breadcrumb separator="/">
+                  <el-breadcrumb-item
+                    v-for="cat in categoryPath"
+                    :key="cat.id"
+                    :to="`/categories/${cat.id}`"
+                  >
+                    {{ cat.name }}
+                  </el-breadcrumb-item>
+                </el-breadcrumb>
+              </span>
+              <span><el-icon><View /></el-icon> {{ question.viewCount }} 浏览</span>
+              <span><el-icon><Clock /></el-icon> {{ formatDate(question.createdAt) }}</span>
             </div>
-            <div class="question-actions">
-              <el-button :icon="isLiked ? StarFilled : Star" :type="isLiked ? 'warning' : 'default'" @click="handleLike">
-                {{ question.likeCount }}
-              </el-button>
-              <el-button :icon="isCollected ? FolderChecked : FolderAdd" @click="handleCollect">
-                收藏
-              </el-button>
-              <el-button :icon="Share" @click="handleShare">
-                分享
-              </el-button>
+
+            <!-- 学习状态 -->
+            <div v-if="userStore.isLoggedIn" class="study-status">
+              <span>学习状态：</span>
+              <el-radio-group v-model="studyStatus" size="small" @change="handleStatusChange">
+                <el-radio-button :value="0">未学</el-radio-button>
+                <el-radio-button :value="1">学习中</el-radio-button>
+                <el-radio-button :value="2">已掌握</el-radio-button>
+                <el-radio-button :value="3">需复习</el-radio-button>
+              </el-radio-group>
             </div>
-          </div>
+          </el-card>
+
+          <!-- 题目内容 -->
+          <el-card class="content-card">
+            <template #header>
+              <span class="card-title">题目内容</span>
+            </template>
+            <MdPreview
+              :model-value="question.content || '暂无内容'"
+              :theme="themeStore.isDark ? 'dark' : 'light'"
+              preview-theme="github"
+              code-theme="github"
+            />
+          </el-card>
+
+          <!-- 参考答案 -->
+          <el-card class="answer-card">
+            <template #header>
+              <div class="answer-header">
+                <span class="card-title">参考答案</span>
+                <el-button v-if="!showAnswer" type="primary" size="small" @click="showAnswer = true">
+                  显示答案
+                </el-button>
+              </div>
+            </template>
+            <div v-if="showAnswer">
+              <MdPreview
+                :model-value="question.answer || '暂无答案'"
+                :theme="themeStore.isDark ? 'dark' : 'light'"
+                preview-theme="github"
+                code-theme="github"
+              />
+            </div>
+            <div v-else class="answer-hidden">
+              <el-icon :size="48"><Lock /></el-icon>
+              <p>点击上方按钮查看答案</p>
+            </div>
+          </el-card>
+
+          <!-- 个人笔记 -->
+          <el-card v-if="userStore.isLoggedIn" class="note-card">
+            <template #header>
+              <div class="note-header">
+                <span class="card-title">个人笔记</span>
+                <el-button v-if="!editingNote" type="primary" text @click="editingNote = true">
+                  <el-icon><Edit /></el-icon> 编辑
+                </el-button>
+              </div>
+            </template>
+            <div v-if="editingNote">
+              <MdEditor
+                v-model="noteContent"
+                :theme="themeStore.isDark ? 'dark' : 'light'"
+                preview-theme="github"
+                code-theme="github"
+                style="height: 300px"
+              />
+              <div class="note-actions">
+                <el-button type="primary" @click="handleSaveNote">保存</el-button>
+                <el-button @click="editingNote = false">取消</el-button>
+              </div>
+            </div>
+            <div v-else-if="noteContent">
+              <MdPreview
+                :model-value="noteContent"
+                :theme="themeStore.isDark ? 'dark' : 'light'"
+                preview-theme="github"
+                code-theme="github"
+              />
+            </div>
+            <el-empty v-else description="暂无笔记，点击编辑添加" />
+          </el-card>
+
+          <!-- 评论区 -->
+          <el-card class="comment-card">
+            <template #header>
+              <span class="card-title">评论 ({{ question.commentCount }})</span>
+            </template>
+            <CommentSection :question-id="question.id" />
+          </el-card>
         </template>
 
-        <h1 class="question-title">{{ question.title }}</h1>
+        <el-empty v-else-if="!loading" description="题目不存在" />
+      </main>
 
-        <div class="question-meta">
-          <span>
-            <el-icon><Folder /></el-icon>
-            <el-breadcrumb separator="/">
-              <el-breadcrumb-item
-                v-for="cat in categoryPath"
-                :key="cat.id"
-                :to="`/categories/${cat.id}`"
-              >
-                {{ cat.name }}
-              </el-breadcrumb-item>
-            </el-breadcrumb>
-          </span>
-          <span><el-icon><View /></el-icon> {{ question.viewCount }} 浏览</span>
-          <span><el-icon><Clock /></el-icon> {{ formatDate(question.createdAt) }}</span>
-        </div>
-
-        <!-- 学习状态 -->
-        <div v-if="userStore.isLoggedIn" class="study-status">
-          <span>学习状态：</span>
-          <el-radio-group v-model="studyStatus" size="small" @change="handleStatusChange">
-            <el-radio-button :value="0">未学</el-radio-button>
-            <el-radio-button :value="1">学习中</el-radio-button>
-            <el-radio-button :value="2">已掌握</el-radio-button>
-            <el-radio-button :value="3">需复习</el-radio-button>
-          </el-radio-group>
-        </div>
-      </el-card>
-
-      <!-- 题目内容 -->
-      <el-card class="content-card">
-        <template #header>
-          <span class="card-title">题目内容</span>
-        </template>
-        <MdPreview
-          :model-value="question.content || '暂无内容'"
-          :theme="'light'"
-          preview-theme="github"
-          code-theme="github"
-        />
-      </el-card>
-
-      <!-- 参考答案 -->
-      <el-card class="answer-card">
-        <template #header>
-          <div class="answer-header">
-            <span class="card-title">参考答案</span>
-            <el-button v-if="!showAnswer" type="primary" size="small" @click="showAnswer = true">
-              显示答案
-            </el-button>
-          </div>
-        </template>
-        <div v-if="showAnswer">
-          <MdPreview
-            :model-value="question.answer || '暂无答案'"
-            :theme="'light'"
-            preview-theme="github"
-            code-theme="github"
-          />
-        </div>
-        <div v-else class="answer-hidden">
-          <el-icon :size="48"><Lock /></el-icon>
-          <p>点击上方按钮查看答案</p>
-        </div>
-      </el-card>
-
-      <!-- 个人笔记 -->
-      <el-card v-if="userStore.isLoggedIn" class="note-card">
-        <template #header>
-          <div class="note-header">
-            <span class="card-title">个人笔记</span>
-            <el-button v-if="!editingNote" type="primary" text @click="editingNote = true">
-              <el-icon><Edit /></el-icon> 编辑
-            </el-button>
-          </div>
-        </template>
-        <div v-if="editingNote">
-          <MdEditor
-            v-model="noteContent"
-            :theme="'light'"
-            preview-theme="github"
-            code-theme="github"
-            style="height: 300px"
-          />
-          <div class="note-actions">
-            <el-button type="primary" @click="handleSaveNote">保存</el-button>
-            <el-button @click="editingNote = false">取消</el-button>
-          </div>
-        </div>
-        <div v-else-if="noteContent">
-          <MdPreview
-            :model-value="noteContent"
-            :theme="'light'"
-            preview-theme="github"
-            code-theme="github"
-          />
-        </div>
-        <el-empty v-else description="暂无笔记，点击编辑添加" />
-      </el-card>
-
-      <!-- 评论区 -->
-      <el-card class="comment-card">
-        <template #header>
-          <span class="card-title">评论 ({{ question.commentCount }})</span>
-        </template>
-        <CommentSection :question-id="question.id" />
-      </el-card>
-    </template>
-
-    <el-empty v-else-if="!loading" description="题目不存在" />
+      <!-- 右侧栏 -->
+      <RightSidebar
+        :category-id="question?.categoryId"
+        :exclude-id="question?.id"
+        related-title="相关题目"
+      />
+    </div>
   </div>
 </template>
 
@@ -156,10 +168,12 @@ import { MdPreview, MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import { useUserStore } from '@/stores/user'
 import { useCategoryStore } from '@/stores/category'
+import { useThemeStore } from '@/stores/theme'
 import { questionApi } from '@/api/question'
 import { learningApi } from '@/api/learning'
 import { DifficultyMap, type Question } from '@/types'
 import CommentSection from '@/components/comment/CommentSection.vue'
+import RightSidebar from '@/components/common/RightSidebar.vue'
 import dayjs from 'dayjs'
 import {
   Star,
@@ -178,6 +192,7 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const categoryStore = useCategoryStore()
+const themeStore = useThemeStore()
 
 const loading = ref(false)
 const question = ref<Question | null>(null)
@@ -208,20 +223,17 @@ async function loadQuestion() {
       question.value = res.data
 
       if (userStore.isLoggedIn) {
-        // 加载点赞状态
         const likeRes = await questionApi.isLiked(id)
         if (likeRes.code === 200) {
           isLiked.value = likeRes.data
         }
 
-        // 加载学习进度
         const progressRes = await learningApi.getProgress(id)
         if (progressRes.code === 200 && progressRes.data) {
           studyStatus.value = progressRes.data.status
           noteContent.value = progressRes.data.note || ''
         }
 
-        // 记录学习行为
         learningApi.recordStudy(id, 'VIEW')
       }
     }
@@ -304,8 +316,23 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .question-detail-page {
-  max-width: 900px;
+  padding: 20px;
+  max-width: 1400px;
   margin: 0 auto;
+}
+
+.page-content {
+  display: flex;
+  gap: 24px;
+
+  @media (max-width: 992px) {
+    flex-direction: column;
+  }
+}
+
+.main-content {
+  flex: 1;
+  min-width: 0;
 
   .el-card {
     margin-bottom: 20px;
@@ -330,7 +357,7 @@ onMounted(() => {
   .question-title {
     font-size: 24px;
     font-weight: 600;
-    color: #333;
+    color: var(--text-color);
     margin-bottom: 16px;
     line-height: 1.4;
   }
@@ -340,7 +367,7 @@ onMounted(() => {
     flex-wrap: wrap;
     gap: 20px;
     font-size: 14px;
-    color: #666;
+    color: var(--text-secondary);
     margin-bottom: 16px;
 
     span {
@@ -359,13 +386,15 @@ onMounted(() => {
     align-items: center;
     gap: 12px;
     padding-top: 16px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid var(--border-color);
+    color: var(--text-secondary);
   }
 }
 
 .card-title {
   font-size: 16px;
   font-weight: 600;
+  color: var(--text-color);
 }
 
 .answer-card {
@@ -378,7 +407,7 @@ onMounted(() => {
   .answer-hidden {
     text-align: center;
     padding: 40px;
-    color: #999;
+    color: var(--text-muted);
 
     p {
       margin-top: 12px;
